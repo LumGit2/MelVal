@@ -12,7 +12,6 @@
       --text:#1f1f1f;
       --pink:#ff4d7d;
       --pink2:#ff6a95;
-      --chip:#ffd1dc;
     }
 
     *{ box-sizing:border-box; }
@@ -63,7 +62,7 @@
     }
 
     .title-wrap{
-      text-align:center; /* ✅ center title text */
+      text-align:center;
       line-height:1.15;
       padding:0 6px;
     }
@@ -117,7 +116,7 @@
       100% { transform: translateY(0); }
     }
 
-    /* Tiny NO (visible but unclickable) */
+    /* NO button (visible, never clickable) */
     .no-tiny{
       position:absolute;
       right:14px;
@@ -128,8 +127,9 @@
       border-radius:10px;
       border:1px solid rgba(0,0,0,0.12);
       background: rgba(255,255,255,0.6);
-      pointer-events:none;
+      pointer-events:none;     /* never clickable */
       user-select:none;
+      will-change: transform;
     }
 
     .screen{ display:none; }
@@ -147,28 +147,54 @@
       border:1px solid rgba(0,0,0,0.08);
       background:#000;
     }
+
+    /* Heart confetti */
+    .confetti-layer{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      border-radius:18px;
+      z-index:50;
+    }
+
+    .heart{
+      position:absolute;
+      font-size:18px;
+      opacity:0;
+      transform: translateY(0) scale(1);
+      animation: popFall 900ms ease-out forwards;
+      will-change: transform, opacity;
+      filter: drop-shadow(0 8px 10px rgba(255,77,125,0.22));
+    }
+
+    @keyframes popFall{
+      0%   { opacity:0; transform: translateY(8px) scale(0.6) rotate(0deg); }
+      12%  { opacity:1; transform: translateY(0) scale(1) rotate(0deg); }
+      100% { opacity:0; transform: translateY(120px) scale(1.15) rotate(35deg); }
+    }
   </style>
 </head>
 <body>
   <div class="card">
+    <!-- confetti sits above everything -->
+    <div class="confetti-layer" id="confetti"></div>
+
     <!-- SCREEN 1 -->
     <div id="screen1" class="screen active">
       <div class="top">
-        <!-- ✅ Left bigger circle: bear only -->
         <div class="emoji-bubble" aria-hidden="true">🐻</div>
 
-        <!-- ✅ Centered title + Capital V in Valentine -->
         <div class="title-wrap">
           <h1 id="question">Melly-Mel, will you be my Valentine?</h1>
           <p>Click “Yes” 🙂</p>
         </div>
 
-        <!-- ✅ Right bigger circle: heart only -->
         <div class="emoji-bubble" aria-hidden="true">❤️</div>
       </div>
 
       <div class="yes-area" id="yesArea">
-        <div class="no-tiny">no</div>
+        <div class="no-tiny" id="noTiny">no</div>
       </div>
     </div>
 
@@ -197,17 +223,18 @@
     const HER_NAME = "Melly-Mel";
     const YES_COUNT = 30;
 
-    // Update question text (keeps the Capital V in Valentine)
     document.getElementById("question").textContent = `${HER_NAME}, will you be my Valentine?`;
 
     const yesArea = document.getElementById("yesArea");
+    const noTiny = document.getElementById("noTiny");
+    const confetti = document.getElementById("confetti");
     const buttons = [];
 
     function rand(min, max){ return Math.random() * (max - min) + min; }
     function randi(min, max){ return Math.floor(rand(min, max + 1)); }
 
+    // ---- YES BUTTONS MOVE AROUND ----
     function placeButtons(){
-      // remove existing
       yesArea.querySelectorAll(".yes-btn").forEach(b => b.remove());
       buttons.length = 0;
 
@@ -219,13 +246,11 @@
         btn.className = "yes-btn";
         btn.textContent = "Yes";
 
-        // random bob speed so they don't move together
         btn.style.animationDuration = `${rand(2.2, 4.2).toFixed(2)}s`;
         btn.style.animationDelay = `${rand(0, 1.2).toFixed(2)}s`;
 
         yesArea.appendChild(btn);
 
-        // initial placement
         const bw = btn.offsetWidth;
         const bh = btn.offsetHeight;
 
@@ -238,25 +263,22 @@
         btn.style.left = x + "px";
         btn.style.top  = y + "px";
 
-        // velocity for drifting movement (bounce inside box)
         const speed = rand(0.25, 0.65);
         const angle = rand(0, Math.PI * 2);
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
 
-        const obj = { el: btn, x, y, vx, vy, bw, bh };
-        buttons.push(obj);
+        buttons.push({ el: btn, x, y, vx, vy, bw, bh });
 
-        btn.addEventListener("click", () => goToVideo());
+        btn.addEventListener("click", () => goToVideoWithConfetti(btn));
       }
     }
 
-    function animate(){
+    function animateButtons(){
       const rect = yesArea.getBoundingClientRect();
       const padding = 14;
 
       for(const b of buttons){
-        // update bounds (in case resize)
         b.bw = b.el.offsetWidth;
         b.bh = b.el.offsetHeight;
 
@@ -268,7 +290,6 @@
         b.x += b.vx;
         b.y += b.vy;
 
-        // bounce
         if (b.x <= minX) { b.x = minX; b.vx *= -1; }
         if (b.x >= maxX) { b.x = maxX; b.vx *= -1; }
         if (b.y <= minY) { b.y = minY; b.vy *= -1; }
@@ -277,20 +298,127 @@
         b.el.style.left = b.x + "px";
         b.el.style.top  = b.y + "px";
       }
-
-      requestAnimationFrame(animate);
+      requestAnimationFrame(animateButtons);
     }
 
-    function goToVideo(){
-      document.getElementById("screen1").classList.remove("active");
-      document.getElementById("screen2").classList.add("active");
-      const v = document.getElementById("vid");
-      v.play().catch(()=>{});
+    // ---- NO DRIFTS AWAY (still visible, never clickable) ----
+    let noX = 0;
+    let noY = 0;
+    function setNoStart(){
+      const rect = yesArea.getBoundingClientRect();
+      const elRect = noTiny.getBoundingClientRect();
+      // start near bottom-right (like before)
+      noX = rect.width - elRect.width - 14;
+      noY = rect.height - elRect.height - 12;
+      noTiny.style.transform = `translate(${noX}px, ${noY}px)`;
     }
 
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+    yesArea.addEventListener("mousemove", (e) => {
+      const rect = yesArea.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      const elW = noTiny.offsetWidth;
+      const elH = noTiny.offsetHeight;
+
+      // current NO position (we store as translate)
+      const nx = noX + elW/2;
+      const ny = noY + elH/2;
+
+      const dx = nx - mx;
+      const dy = ny - my;
+      const dist = Math.hypot(dx, dy);
+
+      // if mouse is close, move NO away
+      const threshold = 90;
+      if(dist < threshold){
+        const push = (threshold - dist) / threshold; // 0..1
+        const dirX = dx / (dist || 1);
+        const dirY = dy / (dist || 1);
+
+        noX += dirX * (18 + 30 * push);
+        noY += dirY * (18 + 30 * push);
+
+        // keep NO inside the box edges
+        const minX = 10;
+        const minY = 10;
+        const maxX = rect.width - elW - 10;
+        const maxY = rect.height - elH - 10;
+
+        noX = clamp(noX, minX, maxX);
+        noY = clamp(noY, minY, maxY);
+
+        noTiny.style.transform = `translate(${noX}px, ${noY}px)`;
+      }
+    });
+
+    // ---- HEART CONFETTI ON YES ----
+    function burstHearts(fromEl){
+      const card = document.querySelector(".card");
+      const cRect = card.getBoundingClientRect();
+      const bRect = fromEl.getBoundingClientRect();
+
+      // spawn near the clicked button
+      const originX = (bRect.left + bRect.width/2) - cRect.left;
+      const originY = (bRect.top  + bRect.height/2) - cRect.top;
+
+      const count = 18;
+
+      for(let i=0;i<count;i++){
+        const h = document.createElement("div");
+        h.className = "heart";
+        h.textContent = "❤️";
+
+        const x = originX + rand(-18, 18);
+        const y = originY + rand(-10, 10);
+
+        h.style.left = x + "px";
+        h.style.top  = y + "px";
+
+        // random size + random animation duration + random slight rotate
+        h.style.fontSize = randi(16, 24) + "px";
+        h.style.animationDuration = randi(700, 1050) + "ms";
+
+        // random drift using translate via CSS var-ish approach:
+        const driftX = rand(-80, 80);
+        const driftY = rand(70, 160);
+
+        h.animate(
+          [
+            { opacity: 0, transform: `translate(0px, 8px) scale(0.6) rotate(0deg)` },
+            { opacity: 1, transform: `translate(${driftX*0.2}px, 0px) scale(1) rotate(0deg)` },
+            { opacity: 0, transform: `translate(${driftX}px, ${driftY}px) scale(1.15) rotate(${rand(-35,35)}deg)` }
+          ],
+          { duration: randi(700, 1050), easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
+        );
+
+        confetti.appendChild(h);
+        setTimeout(() => h.remove(), 1200);
+      }
+    }
+
+    function goToVideoWithConfetti(btn){
+      burstHearts(btn);
+
+      // small delay so she sees the burst before switching
+      setTimeout(() => {
+        document.getElementById("screen1").classList.remove("active");
+        document.getElementById("screen2").classList.add("active");
+        const v = document.getElementById("vid");
+        v.play().catch(()=>{});
+      }, 350);
+    }
+
+    // init
     placeButtons();
-    requestAnimationFrame(animate);
-    window.addEventListener("resize", placeButtons);
+    setNoStart();
+    requestAnimationFrame(animateButtons);
+    window.addEventListener("resize", () => {
+      placeButtons();
+      setNoStart();
+    });
   </script>
 </body>
 </html>
