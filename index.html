@@ -12,7 +12,9 @@
       --text:#1f1f1f;
       --pink:#ff4d7d;
       --pink2:#ff6a95;
+      --chip:#ffd1dc;
     }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
@@ -25,9 +27,10 @@
       justify-content:center;
       padding:16px;
     }
+
     .card{
-      width:min(680px, 100%);
-      background:rgba(255,255,255,0.85);
+      width:min(720px, 100%);
+      background:rgba(255,255,255,0.86);
       backdrop-filter: blur(6px);
       border:1px solid rgba(0,0,0,0.06);
       border-radius:18px;
@@ -36,78 +39,148 @@
       position:relative;
       overflow:hidden;
     }
-    .top{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
-    .emoji{
-      width:44px;height:44px;border-radius:999px;display:grid;place-items:center;
-      background: linear-gradient(135deg, #ffd1dc, #fff);
+
+    /* Header: Bear circle (left) + centered text + Heart circle (right) */
+    .top{
+      display:grid;
+      grid-template-columns: 80px 1fr 80px;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .emoji-bubble{
+      width:68px;
+      height:68px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background: linear-gradient(135deg, #ffd1dc, #ffeaf1);
       border:1px solid rgba(0,0,0,0.06);
-      font-size:22px;
+      font-size:30px;
       user-select:none;
+      box-shadow: 0 10px 18px rgba(255,77,125,0.12);
     }
-    h1{ margin:0; font-size:22px; font-weight:800; letter-spacing:-0.3px; }
-    p{ margin:8px 0 0 0; opacity:0.8; font-size:14px; }
 
+    .title-wrap{
+      text-align:center; /* ✅ center title text */
+      line-height:1.15;
+      padding:0 6px;
+    }
+
+    h1{
+      margin:0;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:-0.3px;
+    }
+
+    p{
+      margin:6px 0 0 0;
+      opacity:0.8;
+      font-size:14px;
+    }
+
+    /* Yes buttons area */
     .yes-area{
-      margin-top:16px;border-radius:16px;background: rgba(255,255,255,0.7);
+      margin-top:14px;
+      border-radius:16px;
+      background: rgba(255,255,255,0.7);
       border:1px dashed rgba(0,0,0,0.12);
-      padding:14px;position:relative;min-height:240px;
+      padding:14px;
+      position:relative;
+      min-height:260px;
+      overflow:hidden;
     }
-    .yes-btn{
-      appearance:none;border:none;
-      background: linear-gradient(135deg, var(--pink), var(--pink2));
-      color:white;font-weight:800;padding:10px 16px;border-radius:999px;
-      cursor:pointer;box-shadow: 0 10px 18px rgba(255,77,125,0.25);
-      transition: transform 0.08s ease;user-select:none;position:absolute;
-    }
-    .yes-btn:active{ transform: scale(0.98); }
 
+    .yes-btn{
+      appearance:none;
+      border:none;
+      background: linear-gradient(135deg, var(--pink), var(--pink2));
+      color:white;
+      font-weight:900;
+      padding:10px 16px;
+      border-radius:999px;
+      cursor:pointer;
+      box-shadow: 0 10px 18px rgba(255,77,125,0.25);
+      user-select:none;
+      position:absolute;
+
+      /* subtle float */
+      animation: bob 2.8s ease-in-out infinite;
+      will-change: transform, left, top;
+    }
+
+    @keyframes bob{
+      0%   { transform: translateY(0); }
+      50%  { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* Tiny NO (visible but unclickable) */
     .no-tiny{
-      position:absolute;right:14px;bottom:12px;font-size:11px;opacity:0.55;
-      padding:6px 8px;border-radius:10px;border:1px solid rgba(0,0,0,0.12);
+      position:absolute;
+      right:14px;
+      bottom:12px;
+      font-size:11px;
+      opacity:0.55;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.12);
       background: rgba(255,255,255,0.6);
-      pointer-events:none; user-select:none;
+      pointer-events:none;
+      user-select:none;
     }
 
     .screen{ display:none; }
     .screen.active{ display:block; }
-    .center{ text-align:center; margin-top:10px; }
+
+    .center{
+      text-align:center;
+      margin-top:10px;
+    }
 
     video{
       width:100%;
-      max-height:420px;
+      max-height:440px;
       border-radius:16px;
       border:1px solid rgba(0,0,0,0.08);
       background:#000;
     }
-
-    .hint{ font-size:12px; opacity:0.7; margin-top:10px; text-align:center; }
   </style>
 </head>
 <body>
   <div class="card">
+    <!-- SCREEN 1 -->
     <div id="screen1" class="screen active">
       <div class="top">
-        <div class="emoji">🐻❤️</div>
-        <div>
-          <h1 id="question">Will you be my valentine?</h1>
+        <!-- ✅ Left bigger circle: bear only -->
+        <div class="emoji-bubble" aria-hidden="true">🐻</div>
+
+        <!-- ✅ Centered title + Capital V in Valentine -->
+        <div class="title-wrap">
+          <h1 id="question">Melly-Mel, will you be my Valentine?</h1>
           <p>Click “Yes” 🙂</p>
         </div>
+
+        <!-- ✅ Right bigger circle: heart only -->
+        <div class="emoji-bubble" aria-hidden="true">❤️</div>
       </div>
 
       <div class="yes-area" id="yesArea">
         <div class="no-tiny">no</div>
       </div>
-
-      <div class="hint">If the video doesn’t autoplay on iPhone, she just taps play once.</div>
     </div>
 
+    <!-- SCREEN 2 -->
     <div id="screen2" class="screen">
       <div class="top">
-        <div class="emoji">🐻❤️</div>
-        <div>
+        <div class="emoji-bubble" aria-hidden="true">🐻</div>
+        <div class="title-wrap">
           <h1>YAY! 🎉</h1>
           <p>Happy Valentine’s 💞</p>
         </div>
+        <div class="emoji-bubble" aria-hidden="true">❤️</div>
       </div>
 
       <div class="center">
@@ -120,16 +193,24 @@
   </div>
 
   <script>
+    // ✅ Custom settings
     const HER_NAME = "Melly-Mel";
     const YES_COUNT = 30;
 
-    document.getElementById("question").textContent = `${HER_NAME}, will you be my valentine?`;
-    const yesArea = document.getElementById("yesArea");
+    // Update question text (keeps the Capital V in Valentine)
+    document.getElementById("question").textContent = `${HER_NAME}, will you be my Valentine?`;
 
-    function rand(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+    const yesArea = document.getElementById("yesArea");
+    const buttons = [];
+
+    function rand(min, max){ return Math.random() * (max - min) + min; }
+    function randi(min, max){ return Math.floor(rand(min, max + 1)); }
 
     function placeButtons(){
+      // remove existing
       yesArea.querySelectorAll(".yes-btn").forEach(b => b.remove());
+      buttons.length = 0;
+
       const rect = yesArea.getBoundingClientRect();
       const padding = 14;
 
@@ -138,22 +219,66 @@
         btn.className = "yes-btn";
         btn.textContent = "Yes";
 
-        const scale = [1,1,1,1.05,1.1,1.15,1.2][rand(0,6)];
-        btn.style.transform = `scale(${scale})`;
+        // random bob speed so they don't move together
+        btn.style.animationDuration = `${rand(2.2, 4.2).toFixed(2)}s`;
+        btn.style.animationDelay = `${rand(0, 1.2).toFixed(2)}s`;
 
         yesArea.appendChild(btn);
 
+        // initial placement
         const bw = btn.offsetWidth;
         const bh = btn.offsetHeight;
 
         const maxLeft = Math.max(padding, rect.width - bw - padding);
         const maxTop  = Math.max(padding, rect.height - bh - padding);
 
-        btn.style.left = rand(padding, maxLeft) + "px";
-        btn.style.top  = rand(padding, maxTop) + "px";
+        const x = rand(padding, maxLeft);
+        const y = rand(padding, maxTop);
+
+        btn.style.left = x + "px";
+        btn.style.top  = y + "px";
+
+        // velocity for drifting movement (bounce inside box)
+        const speed = rand(0.25, 0.65);
+        const angle = rand(0, Math.PI * 2);
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        const obj = { el: btn, x, y, vx, vy, bw, bh };
+        buttons.push(obj);
 
         btn.addEventListener("click", () => goToVideo());
       }
+    }
+
+    function animate(){
+      const rect = yesArea.getBoundingClientRect();
+      const padding = 14;
+
+      for(const b of buttons){
+        // update bounds (in case resize)
+        b.bw = b.el.offsetWidth;
+        b.bh = b.el.offsetHeight;
+
+        const minX = padding;
+        const minY = padding;
+        const maxX = rect.width - b.bw - padding;
+        const maxY = rect.height - b.bh - padding;
+
+        b.x += b.vx;
+        b.y += b.vy;
+
+        // bounce
+        if (b.x <= minX) { b.x = minX; b.vx *= -1; }
+        if (b.x >= maxX) { b.x = maxX; b.vx *= -1; }
+        if (b.y <= minY) { b.y = minY; b.vy *= -1; }
+        if (b.y >= maxY) { b.y = maxY; b.vy *= -1; }
+
+        b.el.style.left = b.x + "px";
+        b.el.style.top  = b.y + "px";
+      }
+
+      requestAnimationFrame(animate);
     }
 
     function goToVideo(){
@@ -164,6 +289,7 @@
     }
 
     placeButtons();
+    requestAnimationFrame(animate);
     window.addEventListener("resize", placeButtons);
   </script>
 </body>
