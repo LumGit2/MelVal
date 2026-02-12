@@ -8,7 +8,6 @@
     :root{
       --bg1:#ffe6ef;
       --bg2:#fff3f7;
-      --card:#ffffff;
       --text:#1f1f1f;
       --pink:#ff4d7d;
       --pink2:#ff6a95;
@@ -39,7 +38,7 @@
       overflow:hidden;
     }
 
-    /* Header: Bear circle (left) + centered text + Heart circle (right) */
+    /* Header */
     .top{
       display:grid;
       grid-template-columns: 80px 1fr 80px;
@@ -80,7 +79,7 @@
       font-size:14px;
     }
 
-    /* Yes buttons area */
+    /* Yes area */
     .yes-area{
       margin-top:14px;
       border-radius:16px;
@@ -105,9 +104,8 @@
       user-select:none;
       position:absolute;
 
-      /* subtle float */
       animation: bob 2.8s ease-in-out infinite;
-      will-change: transform, left, top;
+      will-change: left, top, transform;
     }
 
     @keyframes bob{
@@ -116,20 +114,18 @@
       100% { transform: translateY(0); }
     }
 
-    /* NO button (visible, never clickable) */
+    /* ✅ NO is now always visible: left/top only (no bottom/right) */
     .no-tiny{
       position:absolute;
-      right:14px;
-      bottom:12px;
       font-size:11px;
       opacity:0.55;
       padding:6px 8px;
       border-radius:10px;
       border:1px solid rgba(0,0,0,0.12);
       background: rgba(255,255,255,0.6);
-      pointer-events:none;     /* never clickable */
+      pointer-events:none;
       user-select:none;
-      will-change: transform;
+      z-index:5;
     }
 
     .screen{ display:none; }
@@ -148,48 +144,46 @@
       background:#000;
     }
 
-    /* Heart confetti */
+    /* ✅ Confetti layer */
     .confetti-layer{
       position:absolute;
-      inset:0;
+      inset:-20px;
       pointer-events:none;
       overflow:hidden;
       border-radius:18px;
       z-index:50;
     }
 
-    .heart{
+    .confetti-heart{
       position:absolute;
-      font-size:18px;
-      opacity:0;
-      transform: translateY(0) scale(1);
-      animation: popFall 900ms ease-out forwards;
+      top:-40px;
+      opacity:0.95;
       will-change: transform, opacity;
-      filter: drop-shadow(0 8px 10px rgba(255,77,125,0.22));
+      filter: drop-shadow(0 8px 10px rgba(255,77,125,0.18));
+      animation-name: fall;
+      animation-timing-function: linear;
+      animation-fill-mode: forwards;
     }
 
-    @keyframes popFall{
-      0%   { opacity:0; transform: translateY(8px) scale(0.6) rotate(0deg); }
-      12%  { opacity:1; transform: translateY(0) scale(1) rotate(0deg); }
-      100% { opacity:0; transform: translateY(120px) scale(1.15) rotate(35deg); }
+    @keyframes fall{
+      0%   { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      100% { transform: translateY(520px) rotate(260deg); opacity: 0; }
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <!-- confetti sits above everything -->
     <div class="confetti-layer" id="confetti"></div>
 
     <!-- SCREEN 1 -->
     <div id="screen1" class="screen active">
       <div class="top">
         <div class="emoji-bubble" aria-hidden="true">🐻</div>
-
         <div class="title-wrap">
           <h1 id="question">Melly-Mel, will you be my Valentine?</h1>
           <p>Click “Yes” 🙂</p>
         </div>
-
         <div class="emoji-bubble" aria-hidden="true">❤️</div>
       </div>
 
@@ -219,21 +213,19 @@
   </div>
 
   <script>
-    // ✅ Custom settings
     const HER_NAME = "Melly-Mel";
     const YES_COUNT = 30;
 
     document.getElementById("question").textContent = `${HER_NAME}, will you be my Valentine?`;
 
     const yesArea = document.getElementById("yesArea");
-    const noTiny = document.getElementById("noTiny");
+    const noTiny  = document.getElementById("noTiny");
     const confetti = document.getElementById("confetti");
     const buttons = [];
 
     function rand(min, max){ return Math.random() * (max - min) + min; }
-    function randi(min, max){ return Math.floor(rand(min, max + 1)); }
 
-    // ---- YES BUTTONS MOVE AROUND ----
+    // ---------------- YES BUTTONS MOVE ----------------
     function placeButtons(){
       yesArea.querySelectorAll(".yes-btn").forEach(b => b.remove());
       buttons.length = 0;
@@ -245,7 +237,6 @@
         const btn = document.createElement("button");
         btn.className = "yes-btn";
         btn.textContent = "Yes";
-
         btn.style.animationDuration = `${rand(2.2, 4.2).toFixed(2)}s`;
         btn.style.animationDelay = `${rand(0, 1.2).toFixed(2)}s`;
 
@@ -270,7 +261,7 @@
 
         buttons.push({ el: btn, x, y, vx, vy, bw, bh });
 
-        btn.addEventListener("click", () => goToVideoWithConfetti(btn));
+        btn.addEventListener("click", () => goToVideo());
       }
     }
 
@@ -301,16 +292,19 @@
       requestAnimationFrame(animateButtons);
     }
 
-    // ---- NO DRIFTS AWAY (still visible, never clickable) ----
-    let noX = 0;
-    let noY = 0;
+    // ---------------- NO DODGES (VISIBLE) ----------------
+    let noX = 0, noY = 0;
+
     function setNoStart(){
       const rect = yesArea.getBoundingClientRect();
-      const elRect = noTiny.getBoundingClientRect();
-      // start near bottom-right (like before)
-      noX = rect.width - elRect.width - 14;
-      noY = rect.height - elRect.height - 12;
-      noTiny.style.transform = `translate(${noX}px, ${noY}px)`;
+      const elW = noTiny.offsetWidth || 24;
+      const elH = noTiny.offsetHeight || 18;
+
+      noX = rect.width - elW - 14;
+      noY = rect.height - elH - 12;
+
+      noTiny.style.left = noX + "px";
+      noTiny.style.top  = noY + "px";
     }
 
     function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
@@ -323,7 +317,6 @@
       const elW = noTiny.offsetWidth;
       const elH = noTiny.offsetHeight;
 
-      // current NO position (we store as translate)
       const nx = noX + elW/2;
       const ny = noY + elH/2;
 
@@ -331,17 +324,15 @@
       const dy = ny - my;
       const dist = Math.hypot(dx, dy);
 
-      // if mouse is close, move NO away
-      const threshold = 90;
+      const threshold = 95;
       if(dist < threshold){
-        const push = (threshold - dist) / threshold; // 0..1
+        const push = (threshold - dist) / threshold;
         const dirX = dx / (dist || 1);
         const dirY = dy / (dist || 1);
 
-        noX += dirX * (18 + 30 * push);
-        noY += dirY * (18 + 30 * push);
+        noX += dirX * (20 + 38 * push);
+        noY += dirY * (20 + 38 * push);
 
-        // keep NO inside the box edges
         const minX = 10;
         const minY = 10;
         const maxX = rect.width - elW - 10;
@@ -350,65 +341,71 @@
         noX = clamp(noX, minX, maxX);
         noY = clamp(noY, minY, maxY);
 
-        noTiny.style.transform = `translate(${noX}px, ${noY}px)`;
+        noTiny.style.left = noX + "px";
+        noTiny.style.top  = noY + "px";
       }
     });
 
-    // ---- HEART CONFETTI ON YES ----
-    function burstHearts(fromEl){
-      const card = document.querySelector(".card");
-      const cRect = card.getBoundingClientRect();
-      const bRect = fromEl.getBoundingClientRect();
+    // ---------------- BIG CONFETTI WHEN VIDEO STARTS ----------------
+    function startConfettiRain(durationMs = 3500){
+      const start = Date.now();
 
-      // spawn near the clicked button
-      const originX = (bRect.left + bRect.width/2) - cRect.left;
-      const originY = (bRect.top  + bRect.height/2) - cRect.top;
+      // clear any old
+      confetti.innerHTML = "";
 
-      const count = 18;
+      function spawn(){
+        // stop after duration
+        if(Date.now() - start > durationMs) return;
 
-      for(let i=0;i<count;i++){
-        const h = document.createElement("div");
-        h.className = "heart";
-        h.textContent = "❤️";
+        // spawn multiple hearts per tick
+        const batch = 6;
+        const card = document.querySelector(".card");
+        const cRect = card.getBoundingClientRect();
 
-        const x = originX + rand(-18, 18);
-        const y = originY + rand(-10, 10);
+        for(let i=0;i<batch;i++){
+          const h = document.createElement("div");
+          h.className = "confetti-heart";
+          h.textContent = "❤️";
 
-        h.style.left = x + "px";
-        h.style.top  = y + "px";
+          const x = rand(0, cRect.width - 10);
+          const size = rand(14, 28);
+          const fallMs = rand(1200, 2200);
 
-        // random size + random animation duration + random slight rotate
-        h.style.fontSize = randi(16, 24) + "px";
-        h.style.animationDuration = randi(700, 1050) + "ms";
+          h.style.left = x + "px";
+          h.style.fontSize = size + "px";
+          h.style.animationDuration = fallMs + "ms";
 
-        // random drift using translate via CSS var-ish approach:
-        const driftX = rand(-80, 80);
-        const driftY = rand(70, 160);
+          // slight sideways drift using translateX inside animation by applying a random transform offset
+          const drift = rand(-80, 80);
+          h.animate(
+            [
+              { transform: `translate(${drift*0.15}px, -20px) rotate(0deg)`, opacity: 0 },
+              { opacity: 1, offset: 0.12 },
+              { transform: `translate(${drift}px, 520px) rotate(${rand(160,320)}deg)`, opacity: 0 }
+            ],
+            { duration: fallMs, easing: "linear", fill: "forwards" }
+          );
 
-        h.animate(
-          [
-            { opacity: 0, transform: `translate(0px, 8px) scale(0.6) rotate(0deg)` },
-            { opacity: 1, transform: `translate(${driftX*0.2}px, 0px) scale(1) rotate(0deg)` },
-            { opacity: 0, transform: `translate(${driftX}px, ${driftY}px) scale(1.15) rotate(${rand(-35,35)}deg)` }
-          ],
-          { duration: randi(700, 1050), easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
-        );
+          confetti.appendChild(h);
+          setTimeout(() => h.remove(), fallMs + 50);
+        }
 
-        confetti.appendChild(h);
-        setTimeout(() => h.remove(), 1200);
+        // keep raining
+        requestAnimationFrame(spawn);
       }
+
+      spawn();
     }
 
-    function goToVideoWithConfetti(btn){
-      burstHearts(btn);
+    function goToVideo(){
+      document.getElementById("screen1").classList.remove("active");
+      document.getElementById("screen2").classList.add("active");
 
-      // small delay so she sees the burst before switching
-      setTimeout(() => {
-        document.getElementById("screen1").classList.remove("active");
-        document.getElementById("screen2").classList.add("active");
-        const v = document.getElementById("vid");
-        v.play().catch(()=>{});
-      }, 350);
+      // ✅ Big confetti starts when video screen appears
+      startConfettiRain(3800);
+
+      const v = document.getElementById("vid");
+      v.play().catch(()=>{});
     }
 
     // init
